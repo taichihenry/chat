@@ -1,0 +1,16 @@
+{
+  "name": "random-chat-backend",
+  "version": "1.0.0",
+  "description": "WebSocket backend for a real-time random pairing chat site (deploy on Railway)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

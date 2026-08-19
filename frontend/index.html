@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="RandomChat — talk to a random stranger in seconds. No sign-up needed.">
+<title>RandomChat — Talk to Strangers</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+</head>
+<body>
+<div id="app">
+
+  <div id="reconnectBanner"><span class="spinner"></span><span id="bannerText">Connection lost — reconnecting…</span></div>
+
+  <!-- ============ LANDING ============ -->
+  <section class="screen active" id="landing">
+    <div class="logo-orbs">
+      <div class="orb a">💬</div>
+      <div class="orb-link"></div>
+      <div class="orb b">🌍</div>
+    </div>
+    <h1 class="brand">RandomChat</h1>
+    <p class="tagline">Meet a random stranger in seconds. No sign-up, no profile — press start and talk. Switch partners anytime, share photos and voice notes.</p>
+    <div class="id-card">
+      <span class="id-label">Your Random ID</span>
+      <span class="id-value" id="myIdValue">—</span>
+      <span class="id-note"><span class="dot"></span> Auto-generated · no registration needed</span>
+    </div>
+    <div class="conn-state" id="connState"><span class="dot dot-warn"></span> Connecting to server…</div>
+    <button class="btn btn-primary big" id="startBtn" data-primary-action disabled>⚡ Start Chatting</button>
+    <div class="features">
+      <span class="feature-pill">🎲 Random pairing</span>
+      <span class="feature-pill">🔁 Instant rematch</span>
+      <span class="feature-pill">🖼️ Photos &amp; 🎙️ voice</span>
+      <span class="feature-pill">🛡️ One-tap report</span>
+      <span class="feature-pill">📶 Auto-reconnect</span>
+    </div>
+    <p class="disclaimer">Be respectful. Use the Report button for spam, harassment or inappropriate behavior. Sessions may be reviewed for safety.</p>
+  </section>
+
+  <!-- ============ SEARCHING ============ -->
+  <section class="screen" id="searching">
+    <div class="radar">
+      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <div class="core">🔍</div>
+    </div>
+    <h2 class="search-title">Finding you a partner…</h2>
+    <p class="search-sub">Matching you with someone new, at random.</p>
+    <div class="online-chip"><span class="dot"></span><span><b id="onlineCount">—</b> people online now</span></div>
+    <div class="search-timer">Searching for <span id="searchElapsed">0.0</span>s</div>
+    <button class="btn btn-ghost" id="cancelSearchBtn">Cancel</button>
+  </section>
+
+  <!-- ============ CHAT ============ -->
+  <section class="screen" id="chat">
+    <header class="chat-header">
+      <div class="avatar" id="partnerAvatar">🙂</div>
+      <div class="partner-meta">
+        <div class="partner-name"><span class="dot" id="partnerDot"></span><span id="partnerName">Stranger</span></div>
+        <div class="partner-status" id="partnerStatus">connected</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-danger" id="reportBtn" title="Report this partner">⚑ Report</button>
+        <button class="btn btn-primary" id="newChatBtn" data-primary-action title="Disconnect and match with someone else">🔁 New</button>
+      </div>
+    </header>
+
+    <div id="msgArea"></div>
+
+    <div class="chat-input" id="inputBar">
+      <input type="file" id="imgFile" accept="image/*" hidden>
+      <button class="icon-btn" id="imgBtn" title="Send a photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L7 20"/></svg>
+      </button>
+      <button class="icon-btn" id="voiceBtn" title="Record a voice note (tap to start / tap to send)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
+      </button>
+      <input type="text" id="msgInput" placeholder="Type a message…" autocomplete="off" maxlength="2000">
+      <span class="rec-timer" id="recTimer"><span class="rec-dot"></span><span id="recSecs">0:00</span></span>
+      <button class="send-btn" id="sendBtn" title="Send">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.4-7.5c.8-.36.8-1.44 0-1.8L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.1c0 .5.37.93.87.99L15 12 2.87 13.9c-.5.07-.87.5-.87 1l.01 4.6c0 .7.73 1.2 1.39.9z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ BANNED ============ -->
+  <section class="screen" id="banned">
+    <div class="banned-box">
+      <div class="ov-icon" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.35)">🚫</div>
+      <h2>Access suspended</h2>
+      <p id="bannedMsg">Multiple user reports were received. Access is temporarily suspended.</p>
+      <p class="banned-count" id="bannedUntil"></p>
+    </div>
+  </section>
+
+  <!-- Offline overlay -->
+  <div id="offlineOverlay">
+    <div class="ov-icon">📡</div>
+    <div class="ov-title">Connection lost</div>
+    <div class="ov-sub">Your network seems unstable. Your match is being kept for you — reconnecting automatically.</div>
+    <div class="ov-count" id="ovCount">Reconnecting…</div>
+    <div class="spinner big-spin"></div>
+  </div>
+
+  <!-- Report modal -->
+  <div class="modal-mask" id="reportModal">
+    <div class="modal">
+      <div id="reportForm">
+        <h3>⚑ Report this partner</h3>
+        <p class="m-sub">Tell us what happened. Reports help keep RandomChat safe. The partner won't know who reported them.</p>
+        <div id="reasonList"></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="reportCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="reportSubmitBtn" style="background:linear-gradient(135deg,#f87171,#ef4444);box-shadow:0 8px 22px rgba(248,113,113,.3)">Submit report</button>
+        </div>
+      </div>
+      <div id="reportDone" class="report-done" style="display:none">
+        <div class="big-icon">✅</div>
+        <h3>Report submitted</h3>
+        <p>Thanks for keeping the community safe. Our safety team will review this session.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="reportStayBtn">Stay in chat</button>
+          <button class="btn btn-primary" id="reportLeaveBtn" data-primary-action>Find new partner</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="modal-mask" id="lightbox">
+    <div class="modal lb-modal"><img id="lightboxImg" alt="Shared photo"></div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
