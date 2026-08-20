@@ -1,24 +1,22 @@
 /* Runtime configuration.
  *
- * For local development, point this at your local backend:
- *   window.RC_CONFIG = { wsUrl: 'ws://localhost:8080' };
+ * For local development: when the page runs on localhost, it automatically
+ * connects to the backend at ws://localhost:8080 (start it with `npm start`).
  *
- * For production on Vercel, set the backend's Railway public URL.
- * You can also provide it via a build-time env var injected by Vercel
- * (e.g. NEXT_PUBLIC_*), or simply hardcode the https→wss URL here.
+ * For production on Vercel, set the backend's Render public URL below.
  */
 (function () {
   var host = location.hostname;
   var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
 
   // Local preview: talk to the backend running on this machine.
-  // Production: Railway public domain like https://random-chat.up.railway.app.
-  var RAILWAY_PUBLIC_URL = isLocal
+  // Production: Render public URL like https://random-chat-backend.onrender.com
+  var BACKEND_PUBLIC_URL = isLocal
     ? 'http://localhost:8080'
-    : ((typeof window !== 'undefined' && window.RAILWAY_PUBLIC_URL) ||
-       'https://your-backend.up.railway.app');
+    : ((typeof window !== 'undefined' && window.BACKEND_PUBLIC_URL) ||
+       'https://your-backend.onrender.com');
 
-  var wsUrl = RAILWAY_PUBLIC_URL
+  var wsUrl = BACKEND_PUBLIC_URL
     .replace(/^http:/, 'ws:')
     .replace(/^https:/, 'wss:');
 

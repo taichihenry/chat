@@ -5,14 +5,14 @@ Anonymous (no registration), auto-reconnect with session restore, text/photo/voi
 messages, and a report system.
 
 - **Frontend**: static site → deploy on **Vercel**
-- **Backend**: Node.js WebSocket service → deploy on **Railway**
+- **Backend**: Node.js WebSocket service → deploy on **Render** (free tier)
 
 ```
 random-chat-fullstack/
 ├── backend/            # WebSocket server (Node.js + ws)
 │   ├── server.js       # pairing, sessions, reconnect restore, reports
 │   ├── package.json
-│   ├── railway.json    # Railway deploy config
+│   ├── render.yaml     # Render deploy config (Blueprint)
 │   └── test/smoke.mjs  # end-to-end smoke test (npm test)
 └── frontend/           # static frontend
     ├── index.html
@@ -49,8 +49,8 @@ cd frontend
 npx serve .        # or: python -m http.server 3000
 ```
 
-Edit `frontend/js/config.js` and set `RAILWAY_PUBLIC_URL` to `http://localhost:8080`
-for local testing.
+When the page is served from `localhost`, `frontend/js/config.js` automatically
+points at `ws://localhost:8080` — no config edit needed for local testing.
 
 Run the automated end-to-end test (boots the server and drives two clients
 through join → match → text/image/voice → disconnect → restore → report → rematch):
@@ -60,18 +60,35 @@ cd backend
 npm test
 ```
 
-## Deploy backend to Railway
+## Deploy backend to Render (free)
 
-1. Push `backend/` to a GitHub repository (or use the Railway CLI / dashboard upload).
-2. On [Railway](https://railway.app): **New Project → Deploy from GitHub repo**.
-   - Railway auto-detects Node.js (Nixpacks) and runs `npm start` (see `railway.json`).
-3. Add a **public domain**: project dashboard → your service → **Settings → Networking → Generate Domain**.
-   You'll get something like `https://random-chat.up.railway.app`.
-4. Add environment variable:
+1. Push `backend/` to a GitHub repository.
+2. On [Render](https://render.com): **New → Web Service** → connect the repo.
+   - Render reads `render.yaml` (Blueprint): build `npm install`, start `npm start`.
+   - Instance type: **Free**.
+3. After deploying you get a URL like `https://random-chat-backend.onrender.com`.
+4. Set environment variable in the dashboard (**Environment** tab):
    - `ALLOWED_ORIGINS` = `https://your-frontend.vercel.app,https://www.your-domain.com`
      (comma-separated list of your frontend origins; use `*` only for testing)
-5. Verify: open `https://your-backend.up.railway.app/health` — you should see
+5. Verify: open `https://your-backend.onrender.com/health` — you should see
    `{"ok":true,"clients":0,"sessions":0,...}`.
+
+### Render free tier — what you need to know
+
+- **Spin-down**: a Free web service that receives **no inbound traffic for
+  15 minutes** spins down (WebSocket messages count as traffic). The next
+  request/connection spins it back up, which takes **about 1 minute** (Render
+  shows a loading page meanwhile). As long as people are chatting, the service
+  stays up.
+- **750 free instance-hours/month** per workspace. Spun-down time doesn't count.
+  A service running 24/7 uses ~720 hours — under the limit, but barely; if it
+  spins down when idle you'll use far less.
+- **Ephemeral filesystem**: sessions live in memory anyway, so nothing extra is lost.
+- **Mitigation already built in**: the frontend auto-reconnects with backoff and
+  restores the session on reconnect, so a spin-up delay is experienced as a brief
+  reconnect rather than data loss.
+- If you need always-on behavior (no cold start), upgrade the service to any
+  paid instance type in Render — no code changes required.
 
 ## Deploy frontend to Vercel
 
@@ -81,10 +98,10 @@ npm test
 3. Before deploying, edit `frontend/js/config.js`:
 
    ```js
-   var RAILWAY_PUBLIC_URL = 'https://your-backend.up.railway.app';
+   var BACKEND_PUBLIC_URL = 'https://your-backend.onrender.com';
    ```
 
-   (Replace with the domain Railway generated in step 3 above.)
+   (Replace with the Render URL from step 3 above.)
 4. Deploy. Your site is live at `https://your-project.vercel.app`.
 
 ## Bind your own domain
@@ -96,12 +113,12 @@ npm test
    `cname.vercel-dns.com` (subdomain) or `A` records to Vercel's IPs (apex).
 4. Add the records at your domain registrar, wait for propagation.
    Vercel auto-provisions the HTTPS certificate.
-5. Update the backend's `ALLOWED_ORIGINS` env var on Railway to include
+5. Update the backend's `ALLOWED_ORIGINS` env var on Render to include
    `https://example.com,https://www.example.com`, then redeploy.
 
-**Backend**: no custom domain needed — the Railway-generated `*.up.railway.app`
-domain works fine with WSS. (You *can* add a custom domain in Railway settings
-if you prefer; then update `RAILWAY_PUBLIC_URL` in `config.js` accordingly.)
+**Backend**: no custom domain needed — the Render-generated `*.onrender.com`
+domain works fine with WSS. (You *can* add a custom domain in Render settings
+if you prefer; then update `BACKEND_PUBLIC_URL` in `config.js` accordingly.)
 
 ## Protocol overview (WebSocket JSON)
 
@@ -119,12 +136,14 @@ Server → client:
 
 ## Operational notes
 
-- Sessions and history live **in server memory** (no database). A Railway
-  redeploy clears all active sessions — acceptable for this app's anonymous
-  chat model. If you need persistence across restarts, add Redis
-  (Railway has a one-click Redis template).
-- Scale: one Railway instance handles thousands of concurrent WebSocket
+- Sessions and history live **in server memory** (no database). A Render
+  redeploy or spin-down clears all active sessions — acceptable for this app's
+  anonymous chat model. The client reconnect + session-restore flow covers the
+  spin-up delay gracefully.
+- Scale: one Render instance handles thousands of concurrent WebSocket
   connections. Horizontal scaling requires sticky sessions + shared state
   (Redis pub/sub) and is out of scope for this single-instance design.
 - Safety limits: 4KB text, ~400KB media, 5 msg/2s rate limit, 30s max voice
   note, 3 reports → 30-min ban.
+- Graceful shutdown: the backend handles `SIGTERM`/`SIGINT` and closes all
+  sockets cleanly on Render redeploys.

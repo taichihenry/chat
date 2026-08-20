@@ -536,3 +536,20 @@ setInterval(() => {
 httpServer.listen(PORT, () => {
   console.log(`[RandomChat] backend listening on :${PORT} (origins: ${ALLOWED_ORIGINS.join(', ')})`);
 });
+
+/* Graceful shutdown: Render sends SIGTERM on redeploy / scale-down.
+   Close WebSocket connections and the HTTP server cleanly. */
+function shutdown(signal) {
+  console.log(`[RandomChat] received ${signal}, shutting down…`);
+  for (const [, c] of clients) {
+    if (c.ws && c.ws.readyState === WebSocket.OPEN) {
+      try { c.ws.close(1001, 'server shutting down'); } catch (e) { /* noop */ }
+    }
+  }
+  wss.close(() => { /* all sockets closed */ });
+  httpServer.close(() => process.exit(0));
+  // force-exit if close hangs
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: random-chat-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      # Comma-separated list of allowed frontend origins.
+      # After deploying the frontend on Vercel, set this to e.g.
+      # https://your-project.vercel.app,https://www.your-domain.com
+      # Use "*" only for testing.
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: NODE_VERSION
+        value: "18.19.0"
